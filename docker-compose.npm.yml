@@ -1,0 +1,13 @@
+# Use when Nginx Proxy Manager runs in Docker: joins its network so NPM can forward to http://cms-app:8080.
+#   docker compose -f docker-compose.yml -f docker-compose.npm.yml up -d --build
+# NPM_NETWORK = the network NPM is on (find it with: docker network ls).
+services:
+  app:
+    networks:
+      - default
+      - npm
+
+networks:
+  npm:
+    external: true
+    name: ${NPM_NETWORK:-npm_default}

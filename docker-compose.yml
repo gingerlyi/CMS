@@ -1,0 +1,39 @@
+# Production stack. Settings come from .env next to this file (see .env.production.example).
+services:
+  app:
+    build: .
+    image: cms-app
+    container_name: cms-app
+    restart: unless-stopped
+    env_file: .env
+    # Only reachable from the server itself; Nginx / Nginx Proxy Manager forwards the domain here.
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads:/var/www/html/storage/app/public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    container_name: cms-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      # The first start initialises MySQL, which takes several minutes on slower disks.
+      start_period: 10m
+
+volumes:
+  uploads:
+  dbdata:

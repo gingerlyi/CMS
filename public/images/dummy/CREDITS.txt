@@ -1,0 +1,8 @@
+Dummy photos from Wikimedia Commons, all Public Domain or CC0 (no attribution required).
+Replace them from the admin panel (Galeri Hasil / Tampilan Situs).
+
+scroll-laptop.jpg  "Hackers working on Linux laptop with computer disks and repair kits - Milano 2022" (CC0)
+hasil-tv.jpg       "US Navy 070129-N-3038W-059 Electronics Technician ... soldering iron ... circuit board" (Public domain)
+hasil-ac.jpg       "Daikin Ac Repair Maintenance at godawori nepal" (CC0)
+hasil-hp.jpg       "GD Guangdong HeYuan ... shop smartphone repair services April 2026 N13P 01" (CC0)
+hasil-kulkas.jpg   "Civil engineers repair air conditioning unit (9733144)" (Public domain)
