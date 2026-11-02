@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
 
         SiteSetting::firstOrCreate([], [
             'site_name' => 'Cover Multimedia Solution',
-            'logo_path' => '/images/logo.png',
+            'logo_path' => '/images/logo.webp',
             'primary_color' => '#9b111e',
             'secondary_color' => '#24303e',
             'whatsapp' => '6281234567890',

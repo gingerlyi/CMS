@@ -10,7 +10,17 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:500,600&display=swap" rel="stylesheet" />
+        {{-- Loaded without blocking the first paint; the page shows in a system font until it arrives. --}}
+        <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:500,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+
+        @if (request()->routeIs('home') && $site->logo_url)
+            {{-- Logo on the brand colour from the very first paint, until React mounts and the intro takes over. --}}
+            <link rel="preload" as="image" href="{{ $site->logo_url }}" fetchpriority="high">
+            <style>
+                #app:empty { position: fixed; inset: 0; background: var(--brand-2); }
+                #app:empty::before { content: ''; position: absolute; top: 50%; left: 50%; width: 112px; height: 112px; transform: translate(-50%, -50%); border-radius: 24px; background: #fff url('{{ $site->logo_url }}') center / 80px no-repeat; }
+            </style>
+        @endif
 
         @routes
         @viteReactRefresh

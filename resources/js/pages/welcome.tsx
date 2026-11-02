@@ -14,6 +14,7 @@ import {
     CheckCircle2,
     ClipboardList,
     ExternalLink,
+    Images,
     Laptop,
     LoaderCircle,
     MapPin,
@@ -47,11 +48,19 @@ const icons: [RegExp, LucideIcon][] = [
 const iconFor = (text: string) => icons.find(([re]) => re.test(text))?.[1] ?? Wrench;
 
 const field =
-    'w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-brand focus:ring-4 focus:ring-brand/15';
+    // text-base on phones: iOS zooms the whole page into any input smaller than 16px.
+    'w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-base sm:text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-brand focus:ring-4 focus:ring-brand/15';
 
 function Logo({ settings, className = 'size-10' }: { settings: SiteSettings; className?: string }) {
     return settings.logo_url ? (
-        <img src={settings.logo_url} alt={settings.site_name} className={`${className} rounded-xl object-contain`} />
+        <img
+            src={settings.logo_url}
+            alt={settings.site_name}
+            width={96}
+            height={96}
+            fetchPriority="high"
+            className={`${className} rounded-xl object-contain`}
+        />
     ) : (
         <span className={`${className} from-brand to-brand-2 grid place-items-center rounded-xl bg-gradient-to-br text-white`}>
             <Wrench className="size-1/2" />
@@ -63,6 +72,23 @@ function Navbar({ settings }: { settings: SiteSettings }) {
     const { auth } = usePage<SharedData>().props;
     const [scrolled, setScrolled] = useState(false);
     const [hidden, setHidden] = useState(false);
+    const [active, setActive] = useState('');
+    const quickLinks: [string, string, LucideIcon][] = [
+        ['#hasil', 'Hasil', Images],
+        ['#layanan', 'Layanan', Wrench],
+        ['#cara-kerja', 'Cara Kerja', ClipboardList],
+        ...(settings.latitude !== null ? ([['#lokasi', 'Lokasi', MapPin]] as [string, string, LucideIcon][]) : []),
+        ['#pesan', 'Pesan', MessageCircle],
+    ];
+
+    // Marks the section crossing the middle of the screen in the phone's bottom bar.
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => entries.forEach((e) => e.isIntersecting && setActive(`#${e.target.id}`)), {
+            rootMargin: '-50% 0px -50% 0px',
+        });
+        document.querySelectorAll('section[id]').forEach((el) => observer.observe(el));
+        return () => observer.disconnect();
+    }, []);
 
     // Slides away while scrolling down, comes back as soon as the visitor scrolls up.
     useEffect(() => {
@@ -78,53 +104,72 @@ function Navbar({ settings }: { settings: SiteSettings }) {
     }, []);
 
     return (
-        <header
-            className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'py-2' : 'py-4'} ${hidden ? '-translate-y-[150%]' : ''}`}
-        >
-            <nav
-                data-nav
-                className={`mx-4 flex max-w-6xl items-center justify-between rounded-2xl border border-neutral-200 bg-white/70 px-4 py-2 backdrop-blur-xl transition-all duration-300 lg:mx-auto ${scrolled ? 'border-brand/30 shadow-lg shadow-black/5' : 'shadow-sm'}`}
+        <>
+            <header
+                className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'py-2' : 'py-4'} ${hidden ? '-translate-y-[150%]' : ''}`}
             >
-                <a href="#top" className="flex items-center gap-3">
-                    <Logo settings={settings} className="size-11" />
-                    {/* Two-tone wordmark like the logo: first word navy, the rest red. */}
-                    <span className="max-w-[11rem] text-sm leading-tight font-extrabold tracking-tight uppercase sm:max-w-none sm:text-base">
-                        <span className="text-brand-2">{settings.site_name.split(' ')[0]}</span>{' '}
-                        <span className="text-brand">{settings.site_name.split(' ').slice(1).join(' ')}</span>
-                    </span>
-                </a>
-                <div className="flex items-center gap-1 text-sm font-medium sm:gap-2">
-                    <a href="#tentang" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
-                        Tentang
+                <nav
+                    data-nav
+                    className={`mx-4 flex max-w-6xl items-center justify-between rounded-2xl border border-neutral-200 bg-white/70 px-4 py-2 backdrop-blur-xl transition-all duration-300 lg:mx-auto ${scrolled ? 'border-brand/30 shadow-lg shadow-black/5' : 'shadow-sm'}`}
+                >
+                    <a href="#top" className="flex items-center gap-3">
+                        <Logo settings={settings} className="size-11" />
+                        {/* Two-tone wordmark like the logo: first word navy, the rest red. */}
+                        <span className="max-w-[11rem] text-sm leading-tight font-extrabold tracking-tight uppercase sm:max-w-none sm:text-base">
+                            <span className="text-brand-2">{settings.site_name.split(' ')[0]}</span>{' '}
+                            <span className="text-brand">{settings.site_name.split(' ').slice(1).join(' ')}</span>
+                        </span>
                     </a>
-                    <a href="#hasil" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 lg:block">
-                        Hasil
-                    </a>
-                    <a href="#layanan" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
-                        Layanan
-                    </a>
-                    <a href="#cara-kerja" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
-                        Cara Kerja
-                    </a>
-                    {settings.latitude !== null && (
-                        <a href="#lokasi" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 lg:block">
-                            Lokasi
+                    <div className="flex items-center gap-1 text-sm font-medium sm:gap-2">
+                        <a href="#tentang" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
+                            Tentang
                         </a>
-                    )}
-                    {auth.user && (
-                        <Link href={route('dashboard')} className="rounded-full px-4 py-2 transition hover:bg-neutral-900/5">
-                            Dashboard
-                        </Link>
-                    )}
+                        <a href="#hasil" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 lg:block">
+                            Hasil
+                        </a>
+                        <a href="#layanan" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
+                            Layanan
+                        </a>
+                        <a href="#cara-kerja" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 md:block">
+                            Cara Kerja
+                        </a>
+                        {settings.latitude !== null && (
+                            <a href="#lokasi" className="hidden rounded-full px-4 py-2 transition hover:bg-neutral-900/5 lg:block">
+                                Lokasi
+                            </a>
+                        )}
+                        {auth.user && (
+                            <Link href={route('dashboard')} className="rounded-full px-4 py-2 transition hover:bg-neutral-900/5">
+                                Dashboard
+                            </Link>
+                        )}
+                        <a
+                            href="#pesan"
+                            className="hover:bg-brand rounded-full bg-neutral-900 px-5 py-2 text-white transition hover:scale-105 active:scale-95"
+                        >
+                            Pesan
+                        </a>
+                    </div>
+                </nav>
+            </header>
+            {/* Phones have no room for the top links: app-style bottom bar, out of the way while typing in the form. */}
+            <nav
+                data-bottom-nav
+                aria-label="Navigasi cepat"
+                className="fixed inset-x-3 bottom-3 z-50 grid auto-cols-fr grid-flow-col gap-1 rounded-2xl border border-white/10 bg-neutral-950/90 p-1.5 text-white shadow-2xl shadow-black/40 md:hidden [body:has(form_:focus)_&]:hidden"
+            >
+                {quickLinks.map(([href, label, Icon]) => (
                     <a
-                        href="#pesan"
-                        className="hover:bg-brand rounded-full bg-neutral-900 px-5 py-2 text-white transition hover:scale-105 active:scale-95"
+                        key={href}
+                        href={href}
+                        className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-medium whitespace-nowrap transition active:scale-95 ${active === href ? 'bg-brand text-white' : 'text-white/70'}`}
                     >
-                        Pesan
+                        <Icon className="size-5" />
+                        {label}
                     </a>
-                </div>
+                ))}
             </nav>
-        </header>
+        </>
     );
 }
 
@@ -145,7 +190,7 @@ function Hero({ settings }: { settings: SiteSettings }) {
     };
 
     return (
-        <section id="top" className="relative isolate flex min-h-[100svh] flex-col items-center overflow-hidden bg-white pt-28 text-center">
+        <section id="top" className="relative isolate flex min-h-[100svh] flex-col items-center overflow-hidden bg-white pt-24 text-center sm:pt-28">
             <div
                 aria-hidden
                 className="bg-brand/25 animate-float pointer-events-none absolute -top-40 -left-40 -z-10 size-[36rem] rounded-full blur-3xl"
@@ -159,16 +204,17 @@ function Hero({ settings }: { settings: SiteSettings }) {
                 className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(#0000001a_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]"
             />
 
-            <div data-hero className="relative z-10 flex max-w-5xl flex-col items-center gap-6 px-6">
-                <h1 className="text-4xl leading-[1.05] font-extrabold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            <div data-hero className="relative z-10 flex max-w-5xl flex-col items-center gap-4 px-4 max-sm:my-auto sm:gap-6 sm:px-6">
+                {/* Sized to the screen width so the title stays on two lines on phones. */}
+                <h1 className="text-[clamp(1.5rem,7.4vw,2.25rem)] leading-[1.1] font-extrabold tracking-tight text-balance sm:text-6xl lg:text-7xl">
                     <span className="from-brand via-brand-2 to-brand bg-gradient-to-r bg-[length:200%_auto] bg-clip-text text-transparent">
                         {settings.hero_title}
                     </span>
                 </h1>
                 {settings.hero_subtitle && (
-                    <p className="max-w-xl text-base font-medium text-pretty text-neutral-700 sm:text-lg">{settings.hero_subtitle}</p>
+                    <p className="max-w-xl text-sm font-medium text-pretty text-neutral-700 sm:text-lg">{settings.hero_subtitle}</p>
                 )}
-                <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                     <button
                         type="button"
                         onMouseMove={(e) => crowd.current?.face(e.clientX)}
@@ -176,7 +222,7 @@ function Hero({ settings }: { settings: SiteSettings }) {
                         onFocus={(e) => crowd.current?.face(centerOf(e.currentTarget))}
                         onBlur={() => crowd.current?.face(null)}
                         onClick={readMore}
-                        className="group from-brand to-brand-2 shadow-brand/30 hover:shadow-brand/50 relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r px-8 py-4 font-semibold text-white shadow-xl transition hover:scale-105 active:scale-95"
+                        className="group from-brand to-brand-2 shadow-brand/30 hover:shadow-brand/50 relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r px-5 py-3 text-sm font-semibold whitespace-nowrap text-white shadow-xl transition hover:scale-105 active:scale-95 sm:px-8 sm:py-4 sm:text-base"
                     >
                         <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                         Read more
@@ -184,7 +230,7 @@ function Hero({ settings }: { settings: SiteSettings }) {
                     </button>
                     <a
                         href="#pesan"
-                        className="border-brand-2 text-brand-2 hover:bg-brand-2 inline-flex items-center gap-2 rounded-full border-2 bg-white px-8 py-4 font-semibold shadow-xl shadow-black/10 transition hover:scale-105 hover:text-white active:scale-95"
+                        className="border-brand-2 text-brand-2 hover:bg-brand-2 inline-flex items-center gap-2 rounded-full border-2 bg-white px-5 py-3 text-sm font-semibold whitespace-nowrap shadow-xl shadow-black/10 transition hover:scale-105 hover:text-white active:scale-95 sm:px-8 sm:py-4 sm:text-base"
                     >
                         Pesan sekarang
                     </a>
@@ -192,7 +238,7 @@ function Hero({ settings }: { settings: SiteSettings }) {
             </div>
 
             {/* Crowd sits below the text and is scaled to fit this area, so it never covers the copy. */}
-            <div data-crowd className="relative mt-4 min-h-[260px] w-full flex-1">
+            <div data-crowd className="relative mt-4 min-h-[260px] w-full max-sm:h-[40svh] max-sm:flex-none sm:flex-1">
                 <CrowdCanvas ref={crowd} src="/images/peeps.png" className="pointer-events-none absolute inset-0 size-full" />
             </div>
         </section>
@@ -332,7 +378,7 @@ function LocationSection({ settings, lat, lng }: { settings: SiteSettings; lat: 
     }, [showMap]);
 
     return (
-        <section id="lokasi" data-section className="relative scroll-mt-24 overflow-hidden bg-black px-6 py-24 text-white">
+        <section id="lokasi" data-section className="relative scroll-mt-24 overflow-hidden bg-black px-6 pt-16 pb-28 text-white sm:py-24">
             <div
                 aria-hidden
                 data-speed="-40"
@@ -352,12 +398,12 @@ function LocationSection({ settings, lat, lng }: { settings: SiteSettings; lat: 
                             <MapPin className="text-brand mt-0.5 size-5 shrink-0" /> {settings.address}
                         </p>
                     )}
-                    <div className="mt-8 flex flex-wrap gap-3">
+                    <div className="mt-8 flex flex-wrap gap-2 sm:gap-3">
                         <button
                             type="button"
                             onClick={() => (showMap ? close() : setFocused(true))}
                             disabled={focused && !showMap}
-                            className="bg-brand shadow-brand/40 inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold shadow-lg transition hover:scale-105 active:scale-95 disabled:opacity-60"
+                            className="bg-brand shadow-brand/40 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg transition hover:scale-105 active:scale-95 disabled:opacity-60 sm:px-6 sm:text-base"
                         >
                             <MapPin className="size-4" /> {showMap ? 'Kembali ke globe' : 'Lihat lokasi'}
                         </button>
@@ -365,7 +411,7 @@ function LocationSection({ settings, lat, lng }: { settings: SiteSettings; lat: 
                             href={directions}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-3 font-semibold transition hover:bg-white hover:text-black"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold transition hover:bg-white hover:text-black sm:px-6 sm:text-base"
                         >
                             <Navigation className="size-4" /> Petunjuk arah
                         </a>
@@ -489,11 +535,12 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
             // Opening sequence: logo screen, two-layer curtain lifts, then the page builds itself up.
             gsap.timeline({ defaults: { ease: 'power3.out' } })
                 .from('[data-intro-logo]', { scale: 0.4, rotate: -15, opacity: 0, duration: 0.7, ease: 'back.out(1.8)' })
-                .from('[data-intro-name]', { y: 24, opacity: 0, letterSpacing: '0.7em', duration: 0.6 }, '-=0.3')
+                .from('[data-intro-name]', { y: 24, opacity: 0, letterSpacing: '0.5em', duration: 0.6 }, '-=0.3')
                 .to('[data-intro-bar]', { scaleX: 1, duration: 0.7, ease: 'power2.inOut' }, '-=0.2')
                 .to('[data-intro-layer]', { yPercent: -100, duration: 0.9, ease: 'power4.inOut', stagger: { each: 0.14, from: 'end' } })
                 .set('[data-intro]', { display: 'none' })
                 .from('[data-nav] > *', { y: -40, opacity: 0, duration: 0.6, stagger: 0.1 }, '-=0.5')
+                .from('[data-bottom-nav]', { yPercent: 150, duration: 0.7 }, '<')
                 .fromTo('[data-hero] h1', { y: 80, clipPath: 'inset(100% 0 0 0)' }, { y: 0, clipPath: 'inset(0% 0 0 0)', duration: 1 }, '<')
                 .from('[data-hero] > :not(h1)', { y: 40, opacity: 0, duration: 0.8, stagger: 0.12 }, '-=0.6')
                 .from('[data-crowd]', { y: 140, opacity: 0, duration: 1.1 }, '-=0.7')
@@ -589,7 +636,7 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                         <div data-intro-logo className="rounded-3xl bg-white p-4 shadow-2xl shadow-black/40">
                             <Logo settings={settings} className="size-20 sm:size-24" />
                         </div>
-                        <p data-intro-name className="text-base font-extrabold tracking-[0.3em] text-white uppercase sm:text-xl">
+                        <p data-intro-name className="text-sm font-extrabold tracking-[0.25em] text-white uppercase sm:text-xl sm:tracking-[0.3em]">
                             {settings.site_name}
                         </p>
                         <span className="block h-0.5 w-48 overflow-hidden rounded-full bg-white/15">
@@ -655,7 +702,7 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                 />
             </div>
 
-            <section id="layanan" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-24">
+            <section id="layanan" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-16 sm:py-24">
                 <div data-reveal className="mx-auto max-w-2xl text-center">
                     <span className="text-brand text-sm font-semibold tracking-wider uppercase">{c.services_label}</span>
                     <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-5xl">
@@ -663,22 +710,30 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                     </h2>
                 </div>
 
-                <div data-reveal className="mt-10 flex flex-wrap justify-center gap-2">
+                {/* Phones: one swipeable row instead of a pile of wrapped chips. */}
+                <div
+                    data-reveal
+                    className="-mx-6 mt-8 flex gap-2 overflow-x-auto px-6 pb-2 [scrollbar-width:none] sm:mx-0 sm:mt-10 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 sm:pb-0"
+                >
                     {categories.map((c) => (
                         <button
                             key={c}
                             type="button"
                             onClick={() => setCategory(c)}
-                            className={`rounded-full px-5 py-2 text-sm font-medium transition ${c === category ? 'bg-brand shadow-brand/30 text-white shadow-lg' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
+                            className={`shrink-0 rounded-full px-5 py-2 text-sm font-medium transition ${c === category ? 'bg-brand shadow-brand/30 text-white shadow-lg' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
                         >
                             {c}
                         </button>
                     ))}
                 </div>
 
-                <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Phones: swipe sideways through the cards, the next one peeking in, instead of six screens of scrolling. */}
+                <div
+                    key={category}
+                    className="-mx-6 mt-6 flex snap-x snap-mandatory scroll-px-6 gap-4 overflow-x-auto px-6 py-4 [scrollbar-width:none] sm:mx-0 sm:mt-12 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:p-0 lg:grid-cols-3"
+                >
                     {shown.map((service) => (
-                        <div key={service.id} data-reveal="zoom">
+                        <div key={service.id} data-reveal="zoom" className="w-[82vw] max-w-sm shrink-0 snap-start sm:w-auto sm:max-w-none">
                             <ServiceCard service={service} onOrder={() => orderService(service.id)} />
                         </div>
                     ))}
@@ -686,7 +741,7 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                 {services.length === 0 && <p className="mt-12 text-center text-neutral-500">Belum ada layanan.</p>}
             </section>
 
-            <section id="cara-kerja" data-section className="bg-brand-2 relative scroll-mt-24 overflow-hidden px-6 py-24 text-white">
+            <section id="cara-kerja" data-section className="bg-brand-2 relative scroll-mt-24 overflow-hidden px-6 py-16 text-white sm:py-24">
                 <div
                     aria-hidden
                     data-speed="60"
@@ -699,12 +754,12 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                             <Words text={c.steps_title} />
                         </h2>
                     </div>
-                    <div className="mt-14 grid gap-6 md:grid-cols-3">
+                    <div className="mt-10 grid gap-4 md:mt-14 md:grid-cols-3 md:gap-6">
                         {steps.map(({ icon: Icon, title, text }, i) => (
                             <div
                                 key={i}
                                 data-reveal="tilt"
-                                className="group hover:border-brand/60 relative rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur transition hover:bg-white/10"
+                                className="group hover:border-brand/60 relative grid grid-cols-[auto_1fr] gap-x-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur transition hover:bg-white/10 md:block md:p-8"
                             >
                                 <span
                                     data-speed="-80"
@@ -712,18 +767,18 @@ export default function Welcome({ services, showcases }: { services: Service[]; 
                                 >
                                     0{i + 1}
                                 </span>
-                                <span className="bg-brand shadow-brand/40 grid size-14 place-items-center rounded-2xl shadow-lg transition group-hover:scale-110 group-hover:-rotate-6">
+                                <span className="bg-brand shadow-brand/40 row-span-2 grid size-12 place-items-center rounded-2xl shadow-lg transition group-hover:scale-110 group-hover:-rotate-6 md:size-14">
                                     <Icon className="size-7" />
                                 </span>
-                                <h3 className="mt-6 text-xl font-bold">{title}</h3>
-                                <p className="mt-2 text-white/70">{text}</p>
+                                <h3 className="text-lg font-bold md:mt-6 md:text-xl">{title}</h3>
+                                <p className="mt-1 text-sm text-white/70 md:mt-2 md:text-base">{text}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            <section id="pesan" className="mx-auto grid max-w-6xl scroll-mt-24 gap-12 px-6 py-24 lg:grid-cols-2">
+            <section id="pesan" className="mx-auto grid max-w-6xl scroll-mt-24 gap-10 px-6 pt-16 pb-28 sm:py-24 lg:grid-cols-2 lg:gap-12">
                 <div data-reveal="left" className="flex flex-col justify-center">
                     <span className="text-brand text-sm font-semibold tracking-wider uppercase">{c.order_label}</span>
                     <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-5xl">

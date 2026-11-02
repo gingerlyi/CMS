@@ -33,7 +33,8 @@ const readStage = (): Stage => ({ width: window.innerWidth, height: window.inner
 function useStage() {
     const [stage, setStage] = useState(readStage);
     useEffect(() => {
-        const onResize = () => setStage(readStage());
+        // Phones fire resize when the address bar slides away; following that would make the cards jump mid-scroll.
+        const onResize = () => setStage((s) => (s.isMobile && s.width === window.innerWidth ? s : readStage()));
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
     }, []);
@@ -121,7 +122,7 @@ export function PerspectiveTunnel({ images, label, title, text, id }: { images: 
     const progress = useSpring(scrollYProgress, { stiffness: 80, damping: 30, restDelta: 0.0001 });
     const pointer = useCameraParallax(!reduce);
 
-    const titleScale = useTransform(progress, [0, 0.5, 1], [0.7, 1, 1.35]);
+    const titleScale = useTransform(progress, [0, 0.5, 1], stage.isMobile ? [0.92, 1, 1.05] : [0.7, 1, 1.35]);
     const titleOpacity = useTransform(progress, [0, 0.12, 0.85, 1], [0.25, 1, 1, 0]);
     const promptOpacity = useTransform(progress, [0, 0.12], [1, 0]);
 
@@ -129,7 +130,8 @@ export function PerspectiveTunnel({ images, label, title, text, id }: { images: 
         <section ref={ref} id={id} className="relative h-[300vh] bg-neutral-50 text-neutral-900">
             <div
                 className="sticky top-0 flex h-[100svh] items-center justify-center overflow-hidden select-none"
-                style={{ perspective: stage.isMobile ? '900px' : '1200px', transformStyle: 'preserve-3d' }}
+                // Desktop: cards pass behind and in front of the title in real 3D. Phones: flat stacking, so the title panel stays on top and readable.
+                style={stage.isMobile ? { perspective: '900px' } : { perspective: '1200px', transformStyle: 'preserve-3d' }}
             >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_60%,transparent_100%)] [background-size:28px_28px] opacity-70" />
                 <div
@@ -139,9 +141,9 @@ export function PerspectiveTunnel({ images, label, title, text, id }: { images: 
                 <div className="border-brand/15 pointer-events-none absolute size-[48vmin] rounded-full border" />
                 <div className="pointer-events-none absolute size-[76vmin] rounded-full border border-dashed border-neutral-300/60" />
 
-                <motion.div style={{ scale: titleScale, opacity: titleOpacity }} className="pointer-events-none z-0 flex max-w-2xl flex-col items-center px-6 text-center">
+                <motion.div style={{ scale: titleScale, opacity: titleOpacity }} className="pointer-events-none z-30 mx-6 flex max-w-2xl flex-col items-center rounded-3xl bg-white/90 p-6 text-center shadow-2xl shadow-black/15 md:z-0 md:mx-0 md:bg-transparent md:px-6 md:py-0 md:shadow-none">
                     {label && <p className="text-brand mb-4 font-mono text-xs tracking-[0.4em] uppercase">{label}</p>}
-                    <h2 className="from-brand-2 via-brand-2 to-brand bg-gradient-to-b bg-clip-text text-4xl leading-[0.95] font-extrabold tracking-tighter text-balance text-transparent sm:text-6xl md:text-7xl">
+                    <h2 className="from-brand-2 via-brand-2 to-brand bg-gradient-to-b bg-clip-text text-4xl leading-[0.95] font-extrabold tracking-tighter text-balance text-transparent max-sm:text-3xl sm:text-6xl md:text-7xl">
                         {title}
                     </h2>
                     {text && <p className="mt-4 max-w-[40ch] text-sm text-neutral-600 sm:text-base">{text}</p>}
@@ -149,7 +151,7 @@ export function PerspectiveTunnel({ images, label, title, text, id }: { images: 
 
                 <motion.div
                     style={{ opacity: promptOpacity }}
-                    className="pointer-events-none absolute bottom-8 z-20 flex flex-col items-center gap-2 font-mono text-xs tracking-[0.3em] text-neutral-500 uppercase"
+                    className="pointer-events-none absolute bottom-24 z-20 flex md:bottom-8 flex-col items-center gap-2 font-mono text-xs tracking-[0.3em] text-neutral-500 uppercase"
                 >
                     <span>Gulir untuk menjelajah</span>
                     <div className="from-brand h-6 w-px bg-gradient-to-b to-transparent" />

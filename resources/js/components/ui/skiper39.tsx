@@ -162,22 +162,37 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = 'absolute bottom-0 
         };
         api.current = { face, jump };
 
+        // 3x phone screens gain nothing visible over 2x here, but cost over twice the pixels on every frame.
+        const dpr = Math.min(devicePixelRatio, 2);
+
+        // No drawing while scrolled out of view.
+        let visible = true;
+        const visibility = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting));
+        visibility.observe(canvas);
+
         const render = () => {
+            if (!visible) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
-            ctx.scale(devicePixelRatio * stage.scale, devicePixelRatio * stage.scale);
+            ctx.scale(dpr * stage.scale, dpr * stage.scale);
             crowd.forEach((peep) => peep.render(ctx));
             ctx.restore();
         };
 
         const resize = () => {
+            // Phones fire resize when the address bar slides away; rebuilding then would make the crowd jump mid-scroll.
+            const width = Math.floor(canvas.clientWidth * dpr);
+            const height = Math.floor(canvas.clientHeight * dpr);
+            if (crowd.length && width === canvas.width && height === canvas.height) return;
+
             // Fit the crowd to the canvas: the back row stands up to 150 above the floor, plus ~30 for bob/hop.
+            // Narrow screens keep the people at a readable size and show fewer of them instead of shrinking everyone.
             const zone = (allPeeps[0]?.height ?? 0) + 180;
-            stage.scale = Math.max(0.35, Math.min(1, canvas.clientWidth / 1300, canvas.clientHeight / zone));
+            stage.scale = Math.max(0.35, Math.min(1, Math.max(canvas.clientWidth / 1300, 0.6), canvas.clientHeight / zone));
             stage.width = canvas.clientWidth / stage.scale;
             stage.height = canvas.clientHeight / stage.scale;
-            canvas.width = canvas.clientWidth * devicePixelRatio;
-            canvas.height = canvas.clientHeight * devicePixelRatio;
+            canvas.width = width;
+            canvas.height = height;
 
             frozen.clear();
             crowd.forEach((peep) => peep.walk.kill());
@@ -207,6 +222,7 @@ const CrowdCanvas = ({ src, rows = 15, cols = 7, className = 'absolute bottom-0 
 
         return () => {
             img.onload = null;
+            visibility.disconnect();
             window.removeEventListener('resize', resize);
             gsap.ticker.remove(render);
             frozen.forEach((s) => s.hop.kill());

@@ -17,14 +17,35 @@ const textareaClass =
 
 // Landing page texts, grouped in the order the sections appear on the page. [key, label, multiline]
 const contentGroups: { title: string; description?: string; fields: [string, string, boolean?][] }[] = [
-    { title: 'Pita berjalan', description: 'Teks merah berjalan di bawah hero. Pisahkan dengan koma; kategori layanan ikut ditampilkan otomatis.', fields: [['marquee', 'Isi pita']] },
+    {
+        title: 'Pita berjalan',
+        description: 'Teks merah berjalan di bawah hero. Pisahkan dengan koma; kategori layanan ikut ditampilkan otomatis.',
+        fields: [['marquee', 'Isi pita']],
+    },
     {
         title: 'Lorong foto 3D',
         description: 'Foto diambil otomatis dari Galeri Hasil, gambar "Kenali kami" dan foto layanan.',
-        fields: [['tunnel_label', 'Label kecil'], ['tunnel_title', 'Judul'], ['tunnel_text', 'Keterangan', true]],
+        fields: [
+            ['tunnel_label', 'Label kecil'],
+            ['tunnel_title', 'Judul'],
+            ['tunnel_text', 'Keterangan', true],
+        ],
     },
-    { title: 'Hasil Perbaikan (carousel 3D)', description: 'Isi kartunya diatur di menu Galeri Hasil.', fields: [['showcase_label', 'Label kecil'], ['showcase_title', 'Judul']] },
-    { title: 'Katalog Layanan', fields: [['services_label', 'Label kecil'], ['services_title', 'Judul']] },
+    {
+        title: 'Hasil Perbaikan (carousel 3D)',
+        description: 'Isi kartunya diatur di menu Galeri Hasil.',
+        fields: [
+            ['showcase_label', 'Label kecil'],
+            ['showcase_title', 'Judul'],
+        ],
+    },
+    {
+        title: 'Katalog Layanan',
+        fields: [
+            ['services_label', 'Label kecil'],
+            ['services_title', 'Judul'],
+        ],
+    },
     {
         title: 'Cara Kerja',
         fields: [
@@ -38,8 +59,31 @@ const contentGroups: { title: string; description?: string; fields: [string, str
             ['step3_text', 'Langkah 3 — keterangan', true],
         ],
     },
-    { title: 'Form Pesan', fields: [['order_label', 'Label kecil'], ['order_title', 'Judul'], ['order_text', 'Keterangan', true]] },
+    {
+        title: 'Form Pesan',
+        fields: [
+            ['order_label', 'Label kecil'],
+            ['order_title', 'Judul'],
+            ['order_text', 'Keterangan', true],
+        ],
+    },
 ];
+
+// The logo never shows above 96px, so a big upload would only slow every page down. Anything the browser can't decode goes up as is.
+async function shrinkLogo(file: File, size = 256) {
+    try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, size / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.9));
+        return blob && blob.size < file.size ? new File([blob], `logo.${blob.type.split('/')[1]}`, { type: blob.type }) : file;
+    } catch {
+        return file;
+    }
+}
 
 // Pulls "lat, lng" out of a pasted Google Maps URL; plain coordinates pass through unchanged.
 // The place pin (!3d…!4d…) wins over the viewport centre (@lat,lng).
@@ -81,7 +125,14 @@ export default function SiteSettings() {
     });
     const fieldErrors = errors as Record<string, string>;
     const [lat, lng] = data.coords.split(',').map((v) => v.trim());
-    const validCoords = Math.abs(Number(lat)) <= 90 && Math.abs(Number(lng)) <= 180 && lat !== '' && lng !== undefined && lng !== '' && !isNaN(Number(lat)) && !isNaN(Number(lng));
+    const validCoords =
+        Math.abs(Number(lat)) <= 90 &&
+        Math.abs(Number(lng)) <= 180 &&
+        lat !== '' &&
+        lng !== undefined &&
+        lng !== '' &&
+        !isNaN(Number(lat)) &&
+        !isNaN(Number(lng));
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -113,12 +164,23 @@ export default function SiteSettings() {
             <Head title="Tampilan Situs" />
             <form onSubmit={submit} className="grid gap-6 p-4 lg:grid-cols-[1fr_320px]">
                 <div className="max-w-2xl space-y-6">
-                    <Heading title="Tampilan Situs" description="Semua teks, gambar dan warna di landing page. Kosongkan kolom teks untuk kembali ke teks bawaan." />
+                    <Heading
+                        title="Tampilan Situs"
+                        description="Semua teks, gambar dan warna di landing page. Kosongkan kolom teks untuk kembali ke teks bawaan."
+                    />
 
                     <Group title="Identitas & kontak">
                         <div className="grid gap-2">
                             <Label htmlFor="logo">Logo</Label>
-                            <Input id="logo" type="file" accept="image/*" onChange={(e) => setData('logo', e.target.files?.[0] ?? null)} />
+                            <Input
+                                id="logo"
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    setData('logo', file ? await shrinkLogo(file) : null);
+                                }}
+                            />
                             <InputError message={errors.logo} />
                         </div>
                         {text('site_name', 'Nama usaha')}
@@ -148,16 +210,29 @@ export default function SiteSettings() {
                         {text('hero_title', 'Judul')}
                         <div className="grid gap-2">
                             <Label htmlFor="hero_subtitle">Subjudul</Label>
-                            <textarea id="hero_subtitle" className={textareaClass} value={data.hero_subtitle} onChange={(e) => setData('hero_subtitle', e.target.value)} />
+                            <textarea
+                                id="hero_subtitle"
+                                className={textareaClass}
+                                value={data.hero_subtitle}
+                                onChange={(e) => setData('hero_subtitle', e.target.value)}
+                            />
                             <InputError message={errors.hero_subtitle} />
                         </div>
                     </Group>
 
-                    <Group title="Kenali kami (gambar dalam bingkai 3D)" description="Section dengan gambar yang tegak saat di-scroll. Gambar lebar (landscape) paling pas.">
+                    <Group
+                        title="Kenali kami (gambar dalam bingkai 3D)"
+                        description="Section dengan gambar yang tegak saat di-scroll. Gambar lebar (landscape) paling pas."
+                    >
                         <div className="grid gap-2">
                             <Label htmlFor="scroll_image">Gambar</Label>
                             <img src={scrollPreview} alt="" className="aspect-video w-full rounded-lg border object-cover" />
-                            <Input id="scroll_image" type="file" accept="image/*" onChange={(e) => setData('scroll_image', e.target.files?.[0] ?? null)} />
+                            <Input
+                                id="scroll_image"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setData('scroll_image', e.target.files?.[0] ?? null)}
+                            />
                             <InputError message={errors.scroll_image} />
                         </div>
                         {(
@@ -174,7 +249,10 @@ export default function SiteSettings() {
                         ))}
                     </Group>
 
-                    <Group title="Lokasi (globe)" description="Titik merah di globe dan peta detailnya. Kosongkan koordinat untuk menyembunyikan section ini.">
+                    <Group
+                        title="Lokasi (globe)"
+                        description="Titik merah di globe dan peta detailnya. Kosongkan koordinat untuk menyembunyikan section ini."
+                    >
                         <div className="grid gap-2">
                             <Label htmlFor="coords">Koordinat atau link Google Maps</Label>
                             <Input
@@ -185,8 +263,9 @@ export default function SiteSettings() {
                                 className="font-mono"
                             />
                             <p className="text-muted-foreground text-xs">
-                                Cara 1: di Google Maps klik kanan titik bengkel, klik angka koordinat paling atas, lalu tempel di sini. Cara 2: buka tempatnya di Google Maps, salin
-                                link dari address bar browser dan tempel; koordinatnya diambil otomatis. (Link pendek maps.app.goo.gl dari tombol Bagikan belum bisa dibaca.)
+                                Cara 1: di Google Maps klik kanan titik bengkel, klik angka koordinat paling atas, lalu tempel di sini. Cara 2: buka
+                                tempatnya di Google Maps, salin link dari address bar browser dan tempel; koordinatnya diambil otomatis. (Link pendek
+                                maps.app.goo.gl dari tombol Bagikan belum bisa dibaca.)
                             </p>
                             <InputError message={fieldErrors.latitude ?? fieldErrors.longitude} />
                         </div>
@@ -235,7 +314,12 @@ export default function SiteSettings() {
                             <div key={key} className="grid gap-2">
                                 <Label htmlFor={key}>{label}</Label>
                                 {multiline ? (
-                                    <textarea id={key} className={textareaClass} value={data.content[key] ?? ''} onChange={(e) => setContent(key, e.target.value)} />
+                                    <textarea
+                                        id={key}
+                                        className={textareaClass}
+                                        value={data.content[key] ?? ''}
+                                        onChange={(e) => setContent(key, e.target.value)}
+                                    />
                                 ) : (
                                     <Input id={key} value={data.content[key] ?? ''} onChange={(e) => setContent(key, e.target.value)} />
                                 )}
@@ -250,7 +334,12 @@ export default function SiteSettings() {
                                 <div key={key} className="grid gap-2">
                                     <Label htmlFor={key}>{label}</Label>
                                     {multiline ? (
-                                        <textarea id={key} className={textareaClass} value={data.content[key] ?? ''} onChange={(e) => setContent(key, e.target.value)} />
+                                        <textarea
+                                            id={key}
+                                            className={textareaClass}
+                                            value={data.content[key] ?? ''}
+                                            onChange={(e) => setContent(key, e.target.value)}
+                                        />
                                     ) : (
                                         <Input id={key} value={data.content[key] ?? ''} onChange={(e) => setContent(key, e.target.value)} />
                                     )}
@@ -295,7 +384,13 @@ export default function SiteSettings() {
                         <Button disabled={processing} className="flex-1">
                             Simpan semua perubahan
                         </Button>
-                        <Transition show={recentlySuccessful} enter="transition ease-in-out" enterFrom="opacity-0" leave="transition ease-in-out" leaveTo="opacity-0">
+                        <Transition
+                            show={recentlySuccessful}
+                            enter="transition ease-in-out"
+                            enterFrom="opacity-0"
+                            leave="transition ease-in-out"
+                            leaveTo="opacity-0"
+                        >
                             <p className="text-muted-foreground text-sm">Tersimpan</p>
                         </Transition>
                     </div>

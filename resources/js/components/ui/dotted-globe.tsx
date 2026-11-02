@@ -181,7 +181,13 @@ export function DottedGlobe({ lat, lng, label, focused = false, onMarkerClick, o
             }
         };
 
+        // No drawing while scrolled out of view.
+        let visible = true;
+        const visibility = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting));
+        visibility.observe(canvas);
+
         const tick = (time: number) => {
+            if (!visible) return;
             v.pulse = (time % 1.6) / 1.6;
             // Idle: sway gently around the marker so it stays on the visible side (and drift back there after a drag).
             if (!reduceMotion && !v.focused && !dragging && performance.now() > v.idleUntil) {
@@ -230,6 +236,7 @@ export function DottedGlobe({ lat, lng, label, focused = false, onMarkerClick, o
         return () => {
             cancelled = true;
             observer.disconnect();
+            visibility.disconnect();
             gsap.ticker.remove(tick);
             gsap.killTweensOf(v);
             canvas.removeEventListener('pointerdown', onDown);

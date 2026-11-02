@@ -18,7 +18,7 @@ tidak perlu buka port, dan Nginx Proxy Manager tidak dipakai.
 ```powershell
 cd "D:\Jedagjedug\Web Porto\CMS"
 npm ci; npm run build; Remove-Item -Recurse -Force node_modules
-tar -czf ..\cms.tar.gz --exclude=node_modules --exclude=vendor --exclude=.env --exclude=public/storage --exclude=public/hot --exclude="storage/logs/*.log" .
+tar -czf ..\cms.tar.gz --exclude=.git --exclude=node_modules --exclude=vendor --exclude=.env --exclude=public/storage --exclude=public/hot --exclude="storage/logs/*.log" .
 scp ..\cms.tar.gz USER@IP_SERVER:/tmp/
 ```
 
